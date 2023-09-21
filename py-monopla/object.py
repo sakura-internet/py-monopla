@@ -144,10 +144,6 @@ def tx(objs, auth):
     cmd += pack('B', 0)                 #OPTION_FLAG
     cmd += pack('!H', sz_payload)       #PAYLOAD_SIZE
 
-    print("cmd:")
-    print(cmd)
-    print("payload:")
-    print(payload)
     ret = _request_sipf_object(cmd, payload, auth)
     if len(ret) != 30:
         raise ValueError("SIPF_OBJECT_UP respons size is invalid")
@@ -161,8 +157,70 @@ def tx(objs, auth):
 
     return res[6]   #OTIDを返す
 
-def rx(objs, auth_info):
-    pass
+def rx(objs, auth):
+    cmd = b''
+    cmd += pack('B', SipfObjectCmd.DOWN_REQUEST)    #COMMAND_TYPE
+    cmd += pack('!Q', 0)                            #COMMAND_TIME
+    cmd += pack('B', 0)                             #OPTION_FLAG
+    cmd += pack('!H', 1)                            #PAYLOAD_SIZE
+
+    payload = b'\x00'   #RESERVED
+
+    ret = _request_sipf_object(cmd, payload, auth)
+
+    #SIPF_DOWN(HEADER)
+    res_head = unpack("!BQBH", ret[:12])
+    payload_len = res_head[3]
+    is_empty = (payload_len == 35)
+    #SIPF_DOWN(PAYLOAD Header)
+    res_payload_head = unpack("!B16sQQBB", ret[12:47])
+    cmd_res = res_payload_head[0]
+    otid = res_payload_head[1]
+
+    if (is_empty) :
+        return None
+
+    #SIPF_DOWN(PYLOAD Objects)
+    res_objs = ret[47:] 
+    obj_qty = 0
+    while True:
+        typ = SipfObjectType(res_objs[0])
+        tag = res_objs[1]
+        sz  = res_objs[2]
+        val = None
+        if   typ == SipfObjectType.UINT8:
+            val = unpack("!B", res_objs[3:(3+sz)])[0]
+        elif typ == SipfObjectType.INT8:
+            val = unpack("!b", res_objs[3:(3+sz)])[0]
+        elif typ == SipfObjectType.UINT16:
+            val = unpack("!H", res_objs[3:(3+sz)])[0]
+        elif typ == SipfObjectType.INT16:
+            val = unpack("!h", res_objs[3:(3+sz)])[0]
+        elif typ == SipfObjectType.UINT32:
+            val = unpack("!L", res_objs[3:(3+sz)])[0]
+        elif typ == SipfObjectType.INT32:
+            val = unpack("!l", res_objs[3:(3+sz)])[0]
+        elif typ == SipfObjectType.UINT64:
+            val = unpack("!Q", res_objs[3:(3+sz)])[0]
+        elif typ == SipfObjectType.INT64:
+            val = unpack("!q", res_objs[3:(3+sz)])[0]
+        elif typ == SipfObjectType.FLOAT32:
+            val = unpack("!f", res_objs[3:(3+sz)])[0]
+        elif typ == SipfObjectType.FLOAT64:
+            val = unpack("!d", res_objs[3:(3+sz)])[0]
+        elif typ == SipfObjectType.BIN:
+            val = res_objs[3:(3+sz)]
+        elif typ == SipfObjectType.STR_UTF8:
+            val = res_objs[3:(3+sz)].decode('utf-8')
+
+        objs.append(SipfObject(tag, typ, val))
+
+        if (3 + sz) >= len(res_objs):
+            break
+
+        res_objs = res_objs[3+sz:]
+    
+    return otid
 
 
 if __name__ == "__main__":
@@ -171,12 +229,23 @@ if __name__ == "__main__":
     print(ret)
 
     objs = []
-    for i in range(8):
-        objs.append(SipfObject(i, SipfObjectType(i), i))
-    objs.append(SipfObject(0x09, SipfObjectType.BIN, b"\x01\x02\x03\x04\x05"))
-    objs.append(SipfObject(0x10, SipfObjectType.STR_UTF8, "Hello"))
+    #for i in range(8):
+    #    objs.append(SipfObject(i, SipfObjectType(i), i))
+    #objs.append(SipfObject(0x09, SipfObjectType.BIN, b"\x01\x02\x03\x04\x05"))
+    #objs.append(SipfObject(0x10, SipfObjectType.STR_UTF8, "Hello"))
 
-    ret = tx(objs, ai)
-    print("OTID:" + ret.hex())
-
+    #ret = tx(objs, ai)
+    #print("OTID:" + ret.hex())
+    
+    ret = rx(objs, ai)
+    if ret is not None:
+        print("OTID: %s" % ret.hex())
+        for obj in objs:
+            print("tag: 0x%02x" % obj.tagid)
+            print("type: %s" % obj.obj_type)
+            print("value_len: %d" % obj.value_len)
+            print("value:")
+            print(obj.value)
+    else:
+        print("Empty")
 
