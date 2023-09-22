@@ -1,0 +1,6 @@
+[tool.setuptools]
+packages = ["py_monopla"]
+
+[project]
+name = "py-monopla"
+version = "0.1"

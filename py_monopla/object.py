@@ -223,29 +223,4 @@ def rx(objs, auth):
     return otid
 
 
-if __name__ == "__main__":
-    ai = auth.SipfAuth()
-    ret = auth.get_auth_info(ai)
-    print(ret)
-
-    objs = []
-    #for i in range(8):
-    #    objs.append(SipfObject(i, SipfObjectType(i), i))
-    #objs.append(SipfObject(0x09, SipfObjectType.BIN, b"\x01\x02\x03\x04\x05"))
-    #objs.append(SipfObject(0x10, SipfObjectType.STR_UTF8, "Hello"))
-
-    #ret = tx(objs, ai)
-    #print("OTID:" + ret.hex())
-    
-    ret = rx(objs, ai)
-    if ret is not None:
-        print("OTID: %s" % ret.hex())
-        for obj in objs:
-            print("tag: 0x%02x" % obj.tagid)
-            print("type: %s" % obj.obj_type)
-            print("value_len: %d" % obj.value_len)
-            print("value:")
-            print(obj.value)
-    else:
-        print("Empty")
 
