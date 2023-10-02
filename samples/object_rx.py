@@ -17,7 +17,8 @@ if ret != 0:
 objs = []
 ret = object.rx(objs, auth_info)
 if ret is not None:
-    print("OTID: %s" % ret.hex())
+    print("OTID: %s" % ret['otid'].hex())
+    print("REMAIN: %d" % ret['remain'])
     for obj in objs:
         print("")
         print("tag: 0x%02x" % obj.tagid)

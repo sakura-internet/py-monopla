@@ -176,6 +176,9 @@ def rx(objs, auth):
     res_payload_head = unpack("!B16sQQBB", ret[12:47])
     cmd_res = res_payload_head[0]
     otid = res_payload_head[1]
+    timestamp_src = res_payload_head[2]
+    timestamp_platform_from_src = res_payload_head[3]
+    remain = res_payload_head[4]
 
     if (is_empty) :
         return None
@@ -220,7 +223,9 @@ def rx(objs, auth):
 
         res_objs = res_objs[3+sz:]
     
-    return otid
-
+    return  { 'otid': otid, 
+              'timestamp_src': timestamp_src, 
+              'timestamp_platform_from_src': timestamp_platform_from_src, 
+              'remain': remain } 
 
 
