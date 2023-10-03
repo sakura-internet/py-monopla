@@ -85,7 +85,13 @@ def create_payload(objs):
     buff = b''
     idx = 0
 
+    if not (type(objs) is list):
+        raise TypeError("objs type is not `list'")
+
     obj_qty = len(objs)
+    if obj_qty == 0:
+        raise TypeError("objs is empty")
+
     for obj in objs:
         if not (type(obj) is SipfObject):
             raise TypeError("objs member type is invalid")
@@ -137,6 +143,9 @@ def _request_sipf_object(cmd, payload, auth):
 def tx(objs, auth):
     payload = create_payload(objs)
     sz_payload = len(payload)
+    if sz_payload > 1000:
+        #ペイロードが1000Byte以上だったら
+        raise ValueError("payload too large.")
 
     cmd = b''
     cmd += pack('B', SipfObjectCmd.UP)  #COMMAND_TYPE
